@@ -26,45 +26,23 @@ import android.support.v4.widget.DrawerLayout;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdate;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-
-import java.text.DateFormat;
-import java.util.Date;
-
 import jp.co.drecom.newmapintegration.utils.NewLog;
 import jp.co.drecom.newmapintegration.utils.NewToast;
 
 
 public class MainMapActivity extends ActionBarActivity
-        implements NavigationDrawerFragment.NavigationDrawerCallbacks,
-        GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener,
-        OnMapReadyCallback,
-        GoogleMap.OnMyLocationButtonClickListener,
-        GoogleMap.OnMapClickListener{
+        implements NavigationDrawerFragment.NavigationDrawerCallbacks {
 
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
     private NavigationDrawerFragment mNavigationDrawerFragment;
 
-    private MapFragment mapFragment;
+    private NewMapFragment mapFragment;
 
     private Intent mLocationServiceIntent;
 
-    //for init location
-    private GoogleApiClient mGoogleApiClient;
+
 
 
     /**
@@ -76,22 +54,16 @@ public class MainMapActivity extends ActionBarActivity
     protected final static String REQUESTING_LOCATION_UPDATES_KEY = "requesting-location-updates-key";
     protected final static String LOCATION_KEY = "location-key";
     protected final static String LAST_UPDATED_TIME_STRING_KEY = "last-updated-time-string-key";
-    protected final static String BROADCASTER_ACTION= "jp.co.drecom.newmapintegration.location";
 
-    private GoogleMap googleMap;
 
-    private Location mTempLocation;
+
     private Location mCurrentLocation;
-    private LatLng mCurrentLatLng;
-
-    private LocationRequest mLocationRequest;
 
     //whether the map camera should be updated.
-    private Boolean mMoveMapCamera;
 
     private String mLastUpdateTime;
 
-    private LocationReceiver mLocationReceiver;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -109,32 +81,17 @@ public class MainMapActivity extends ActionBarActivity
                 (DrawerLayout) findViewById(R.id.drawer_layout));
 //        mRequestLocationUpdates = false;
         mLastUpdateTime = "";
-        mMoveMapCamera = true;
 
-        mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+        mapFragment = (NewMapFragment) getFragmentManager().findFragmentById(R.id.map);
+
 
         updateValuesFromBundle(savedInstanceState);
-
-        //register a dynamic broadcaster.
-        mLocationReceiver = new LocationReceiver();
-        IntentFilter intentfilter = new IntentFilter();
-        intentfilter.addAction(BROADCASTER_ACTION);
-        registerReceiver(mLocationReceiver, intentfilter);
-
-        buildGoogleApiClient();
 
         mLocationServiceIntent = new Intent(this, LocationService.class);
         startService(mLocationServiceIntent);
     }
 
-    private synchronized void buildGoogleApiClient() {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .addConnectionCallbacks(this)
-                .addOnConnectionFailedListener(this)
-                .addApi(LocationServices.API)
-                .build();
-    }
+
 
 
 
@@ -159,7 +116,7 @@ public class MainMapActivity extends ActionBarActivity
     protected void onStart() {
         super.onStart();
         NewLog.logD("onStart");
-        mGoogleApiClient.connect();
+
     }
 
     @Override
@@ -185,14 +142,14 @@ public class MainMapActivity extends ActionBarActivity
     protected void onDestroy() {
         super.onDestroy();
         stopService(mLocationServiceIntent);
-        unregisterReceiver(mLocationReceiver);
+
     }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
         NewLog.logD("onTouchEvent");
-        if (mMoveMapCamera) {
-            mMoveMapCamera = false;
+        if (mapFragment.mMoveMapCamera) {
+            mapFragment.mMoveMapCamera = false;
         }
 
         return super.dispatchTouchEvent(event);
@@ -291,65 +248,7 @@ public class MainMapActivity extends ActionBarActivity
     //location related
 
 
-    private void updateUI(double latitude, double longitude) {
-        //TODO
-        //if screen is touched, or turned to background, stop updating UI
-            //for UI updated
-        if (mMoveMapCamera) {
-            mCurrentLatLng = new LatLng(latitude, longitude);
-            mapFragment.getMap().animateCamera(
-                    CameraUpdateFactory.newLatLng(mCurrentLatLng));
-        }
 
-    }
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        NewLog.logD("onMapReady");
-        this.googleMap = googleMap;
-//        googleMap.addMarker(new MarkerOptions().position(new LatLng(0,0)).title("Marker"));
-//        googleMap.animateCamera(CameraUpdateFactory.zoomIn());
-        googleMap.setMyLocationEnabled(true);
-        googleMap.setOnMapClickListener(this);
-        googleMap.setOnMyLocationButtonClickListener(this);
-    }
-
-    @Override
-    public void onConnected(Bundle bundle) {
-        mTempLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        if (mTempLocation != null) {
-            //update UI
-            mCurrentLatLng = new LatLng(mTempLocation.getLatitude(),
-                    mTempLocation.getLongitude());
-            //zoom range is 2.0-21.0
-            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLatLng,15));
-
-            mGoogleApiClient.disconnect();
-            NewLog.logD("mGoogleApiClient onConnect - disconnect");
-        }
-    }
-
-    @Override
-    public void onConnectionSuspended(int i) {
-
-    }
-
-    @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-
-    }
-
-    @Override
-    public boolean onMyLocationButtonClick() {
-        NewLog.logD("MyLocationButton clicked");
-        mMoveMapCamera = true;
-        return false;
-    }
-
-    @Override
-    public void onMapClick(LatLng latLng) {
-        NewLog.logD("map clicked");
-    }
 
 
     /**
@@ -392,16 +291,6 @@ public class MainMapActivity extends ActionBarActivity
         }
     }
 
-    public class LocationReceiver extends BroadcastReceiver {
 
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            //TODO
-//            NewLog.logD("onReceived");
-            updateUI(intent.getDoubleExtra("Latitude", 0.0),
-                    intent.getDoubleExtra("Longitude", 0.0));
-            //receive the location info, then update UI here
-        }
-    }
 
 }
