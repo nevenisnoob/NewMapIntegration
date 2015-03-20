@@ -11,6 +11,9 @@ import android.widget.Button;
 import android.widget.DatePicker;
 
 import java.util.Date;
+import java.util.GregorianCalendar;
+
+import jp.co.drecom.newmapintegration.utils.NewLog;
 
 
 /**
@@ -23,10 +26,18 @@ public class DatePickingFragment extends Fragment implements View.OnClickListene
     private DatePicker endDatePicker;
     private Button confirmBtn;
     private Button cancelBtn;
+    private long startUnixTime;
+    private long endUnixTime;
 
+    OnDatePickListener datePickListener;
 
     public DatePickingFragment() {
         // Required empty public constructor
+    }
+
+    //send data to Activity
+    public interface OnDatePickListener {
+        public void getDateData (long startTime, long endTime);
     }
 
 
@@ -51,7 +62,7 @@ public class DatePickingFragment extends Fragment implements View.OnClickListene
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.confirm_btn:
-
+                getUnixTime();
                 getFragmentManager().beginTransaction().remove(this).commit();
                 break;
             case R.id.cancel_btn:
@@ -61,6 +72,18 @@ public class DatePickingFragment extends Fragment implements View.OnClickListene
     }
 
     private void getUnixTime() {
-        Date startTime = new DateTime(startDatePicker.getYear(), startDatePicker.getMonth(), startDatePicker.getDayOfMonth());
+        GregorianCalendar startTime = new GregorianCalendar(startDatePicker.getYear(),
+                startDatePicker.getMonth(), startDatePicker.getDayOfMonth(),
+                0, 0, 0);
+        startUnixTime = startTime.getTimeInMillis() / 1000;
+
+        GregorianCalendar endTime = new GregorianCalendar(endDatePicker.getYear(),
+                endDatePicker.getMonth(), endDatePicker.getDayOfMonth(),
+                23,59,59);
+        endUnixTime = endTime.getTimeInMillis() / 1000;
+
+        datePickListener.getDateData(startUnixTime, endUnixTime);
+
+        NewLog.logD("the start time is " + startUnixTime + " and the end time is " + endUnixTime);
     }
 }
