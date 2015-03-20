@@ -33,9 +33,11 @@ public class LocationService extends Service implements
 
     //foreground mode 30 second update
     //background mode: 60 second update
-    private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 60000;
+    private static long UPDATE_INTERVAL_IN_MILLISECONDS = 30000;
 
-    private static final long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
+    private static final long UPDATE_INTERVAL_STEP = 30000;
+
+    private static long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
             UPDATE_INTERVAL_IN_MILLISECONDS / 2;
 
     private final static String BROADCASTER_ACTION= "jp.co.drecom.newmapintegration.location";
@@ -45,13 +47,19 @@ public class LocationService extends Service implements
     private LocationRequest mLocationRequest;
 
     private LocationDBHelper mLocationDBHelper;
-    private SQLiteDatabase mLocationDB;
+
 
     private Location mCurrentLocation;
     private double mCurrentLatitude;
     private double mCurrentLongitude;
+    //if |mLastLatitude - mCurrentLatitude| < 0.000005 &&
+    //   |mLastLongitude - mCurrentLongitude| < 0.000005
+    //then do not write the current location to DB.
+    private double mLastLatitude;
+    private double mLastLongitude;
 
     private String mCurrentTime;
+    private long mCurrentUnixTime;
 
     private Boolean mWhetherLocationUpdate;
 
@@ -70,6 +78,8 @@ public class LocationService extends Service implements
         super.onCreate();
 
         mWhetherLocationUpdate = true;
+        mLastLatitude = 0;
+        mLastLongitude = 0;
 
 
         NewLog.logD("service onCreate");
@@ -94,7 +104,7 @@ public class LocationService extends Service implements
 
     private synchronized void initLocationDB() {
         mLocationDBHelper = new LocationDBHelper(getBaseContext());
-        mLocationDB = mLocationDBHelper.getWritableDatabase();
+        mLocationDBHelper.mLocationDB = mLocationDBHelper.getWritableDatabase();
     }
 
 
@@ -116,7 +126,7 @@ public class LocationService extends Service implements
     @Override
     public void onDestroy() {
         super.onDestroy();
-        mLocationDB.close();
+        mLocationDBHelper.mLocationDB.close();
         NewLog.logD("service onDestroy");
         if (mGoogleApiClient != null) {
             mGoogleApiClient.disconnect();
@@ -154,18 +164,30 @@ public class LocationService extends Service implements
     public void onLocationChanged(Location location) {
         //TODO
         //add current time
+        mLastLatitude = mCurrentLatitude;
+        mLastLongitude = mCurrentLongitude;
+
         mCurrentLocation = location;
         mCurrentLatitude = location.getLatitude();
         mCurrentLongitude = location.getLongitude();
         mLocationIntent.putExtra("Latitude", mCurrentLatitude);
         mLocationIntent.putExtra("Longitude", mCurrentLongitude);
         mCurrentTime = DateFormat.getDateTimeInstance().format(new Date());
+        mCurrentUnixTime = (System.currentTimeMillis() / 1000L);
+
+
+
         //TODO
 
-        rowID = saveDataToDB(mCurrentTime, mCurrentLatitude, mCurrentLongitude);
-        NewLog.logD("DB inserted, row ID is " + rowID);
+        if (whetherNeedUpdateLocation()) {
+            rowID = mLocationDBHelper
+                    .saveDataToDB(mCurrentLatitude, mCurrentLongitude, mCurrentUnixTime);
+            sendBroadcast(mLocationIntent);
+            NewLog.logD("DB inserted, row ID is " + rowID);
+        }
 
-        sendBroadcast(mLocationIntent);
+        NewLog.logD("the current time is " + mCurrentTime);
+        NewLog.logD("the current unix time is " + mCurrentUnixTime);
         NewLog.logD("service location changed" + mCurrentLocation);
 
     }
@@ -175,13 +197,23 @@ public class LocationService extends Service implements
         NewLog.logD("onConnectionFailed");
     }
 
-    private long saveDataToDB(String time, double latitude, double longitude) {
-        ContentValues values = new ContentValues();
-        values.put(mLocationDBHelper.MY_LOCATION_TIME, time);
-        values.put(mLocationDBHelper.MY_LOCATION_LATITUDE, latitude);
-        values.put(mLocationDBHelper.MY_LOCATION_LONGITUDE, longitude);
-        return mLocationDB.insert(mLocationDBHelper.MY_LOCATION_TABLE_NAME,
-                null, values);
+
+
+    private boolean whetherNeedUpdateLocation() {
+        //the distance of two points (35.631260n 139.712820w), (35.631269n 139.712829w) is 1.3m
+        if (Math.abs(mLastLatitude - mCurrentLatitude) < 0.000009 &&
+                Math.abs(mLastLongitude - mCurrentLongitude) < 0.000009) {
+            //self-adaption
+//            UPDATE_INTERVAL_IN_MILLISECONDS += UPDATE_INTERVAL_STEP;
+//            NewLog.logD("update time interval is " + UPDATE_INTERVAL_IN_MILLISECONDS);
+//            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+//            mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
+//            LocationServices.FusedLocationApi.requestLocationUpdates(
+//                    mGoogleApiClient, mLocationRequest, this);
+            return false;
+
+        }
+        return true;
     }
 
 }

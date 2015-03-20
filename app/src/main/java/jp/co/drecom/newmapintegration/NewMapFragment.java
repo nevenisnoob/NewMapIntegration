@@ -6,6 +6,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
 import android.app.Fragment;
@@ -27,6 +29,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
+import jp.co.drecom.newmapintegration.utils.LocationDBHelper;
 import jp.co.drecom.newmapintegration.utils.NewLog;
 
 
@@ -59,14 +62,22 @@ public class NewMapFragment extends MapFragment implements
     //while I need to get the touch event to control the map's camera view
     //so I make this flag to be public.
     //not good design, but...
-    public Boolean mMoveMapCamera;
+    public boolean mMoveMapCamera;
     private LatLng mCurrentLatLng;
 
     private Location mTempLocation;
 
+    //if |mLastLatitude - mCurrentLatitude| < 0.000005 &&
+    //   |mLastLongitude - mCurrentLongitude| < 0.000005
+    //then do not write the current location to DB.
+    private double mLastLatitude;
+    private double mLastLongitude;
+
     private Location mLastLocation;
 
     private PolylineOptions mFootPrint;
+
+    private LocationDBHelper mLocationDBHelper;
 
 
 
@@ -88,6 +99,8 @@ public class NewMapFragment extends MapFragment implements
         super.onCreate(savedInstanceState);
 
         mMoveMapCamera = true;
+        mLastLatitude = 0;
+        mLastLongitude = 0;
 
         buildGoogleApiClient();
 
@@ -100,8 +113,14 @@ public class NewMapFragment extends MapFragment implements
         getActivity().registerReceiver(mLocationReceiver, intentfilter);
 
         mFootPrint = new PolylineOptions();
+        mFootPrint.geodesic(true);
+//        mFootPrint.width(2);
+//        mFootPrint.color(Color.YELLOW);
+        initLocationDB();
+    }
 
-
+    private void initLocationDB() {
+        mLocationDBHelper = new LocationDBHelper(getActivity());
     }
 
     private synchronized void buildGoogleApiClient() {
@@ -124,6 +143,7 @@ public class NewMapFragment extends MapFragment implements
     public void onResume() {
         super.onResume();
         NewLog.logD("NewMapFragment.onResume");
+        drawFootPrint(0, 1426840536);
     }
 
     @Override
@@ -209,6 +229,7 @@ public class NewMapFragment extends MapFragment implements
         mGoogleMap.setBuildingsEnabled(true);
         mGoogleMap.setOnCameraChangeListener(this);
 
+
     }
 
     @Override
@@ -245,10 +266,13 @@ public class NewMapFragment extends MapFragment implements
             //update UI
             mCurrentLatLng = new LatLng(mTempLocation.getLatitude(),
                     mTempLocation.getLongitude());
+            mLastLatitude = mTempLocation.getLatitude();
+            mLastLongitude = mTempLocation.getLongitude();
             //zoom range is 2.0-21.0
             mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mCurrentLatLng,15));
 
             mGoogleApiClient.disconnect();
+
             NewLog.logD("mGoogleApiClient onConnect - disconnect");
         }
     }
@@ -280,14 +304,58 @@ public class NewMapFragment extends MapFragment implements
         //TODO
         //if screen is touched, or turned to background, stop updating UI
         //for UI updated
-        mCurrentLatLng = new LatLng(latitude, longitude);
-        mFootPrint.add(mCurrentLatLng);
-        mGoogleMap.addPolyline(mFootPrint);
-        if (mMoveMapCamera) {
+        if (whetherNeedUpdateLocation(latitude,longitude)) {
+            mCurrentLatLng = new LatLng(latitude, longitude);
+            mFootPrint.add(mCurrentLatLng);
+            mGoogleMap.addPolyline(mFootPrint);
+        }
 
+        if (mMoveMapCamera) {
             mGoogleMap.animateCamera(
                     CameraUpdateFactory.newLatLng(mCurrentLatLng));
         }
+        mLastLatitude = latitude;
+        mLastLongitude = longitude;
 
+    }
+
+    private boolean whetherNeedUpdateLocation(double latitude, double longitude) {
+        //the distance of two points (35.631260n 139.712820w), (35.631269n 139.712829w) is 1.3m
+        if (Math.abs(mLastLatitude - latitude) < 0.000009 &&
+                Math.abs(mLastLongitude - longitude) < 0.000009) {
+            return false;
+        }
+        return true;
+    }
+
+    private void drawFootPrint(long startTime, long endTime) {
+        if (mFootPrint == null || mGoogleMap == null) {
+            return;
+        }
+
+        mLocationDBHelper.mLocationDB = mLocationDBHelper.getReadableDatabase();
+        Cursor cursor = mLocationDBHelper.getLocationLog(startTime, endTime);
+        double latitude, longitude;
+        LatLng location;
+        boolean isEof = cursor.moveToFirst();
+        NewLog.logD("the total data of today is " + cursor.getCount());
+        while (isEof) {
+            latitude = cursor.getDouble(0);
+            longitude = cursor.getDouble(1);
+//            int tempTime = cursor.getInt(2);
+//            long tempTime2 = cursor.getLong(2);
+//            double tempTime3 = cursor.getFloat(2);
+//            String tempTime4 = cursor.getString(2);
+
+
+            NewLog.logD("the data from db is "+latitude + ", " + longitude
+                    + ", time is "+ cursor.getLong(2));
+            location = new LatLng(latitude, longitude);
+            mFootPrint.add(location);
+            mGoogleMap.addPolyline(mFootPrint);
+            isEof = cursor.moveToNext();
+        }
+        cursor.close();
+        mLocationDBHelper.mLocationDB.close();
     }
 }

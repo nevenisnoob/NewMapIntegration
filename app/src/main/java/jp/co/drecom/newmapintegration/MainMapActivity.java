@@ -39,6 +39,7 @@ public class MainMapActivity extends ActionBarActivity
     private NavigationDrawerFragment mNavigationDrawerFragment;
 
     private NewMapFragment mapFragment;
+    private DatePickingFragment datePickingFragment;
 
     private Intent mLocationServiceIntent;
 
@@ -141,13 +142,15 @@ public class MainMapActivity extends ActionBarActivity
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // if you want update the location log,
+        //just comment the function.
         stopService(mLocationServiceIntent);
 
     }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
-        NewLog.logD("onTouchEvent");
+//        NewLog.logD("onTouchEvent");
         if (mapFragment.mMoveMapCamera) {
             mapFragment.mMoveMapCamera = false;
         }
@@ -189,9 +192,29 @@ public class MainMapActivity extends ActionBarActivity
     public void onNavigationDrawerItemSelected(int position) {
         // update the main content by replacing fragments
         FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction()
-                .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
-                .commit();
+        switch (position) {
+            case 0:
+                if (datePickingFragment != null) {
+                    fragmentManager.beginTransaction()
+                            .remove(datePickingFragment).commit();
+                }
+                break;
+            case 1:
+                if (datePickingFragment == null) {
+                    datePickingFragment = new DatePickingFragment();
+                    fragmentManager.beginTransaction()
+                            .add(R.id.container, datePickingFragment).commit();
+                } else {
+                    fragmentManager.beginTransaction()
+                            .replace(R.id.container, datePickingFragment).commit();
+                }
+                break;
+            case 2:
+                break;
+        }
+//        fragmentManager.beginTransaction()
+//                .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
+//                .commit();
     }
 
     public void onSectionAttached(int number) {
@@ -244,52 +267,56 @@ public class MainMapActivity extends ActionBarActivity
         return super.onOptionsItemSelected(item);
     }
 
-    //*****************************************************************************
-    //location related
 
-
-
-
-
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
-
-        public PlaceholderFragment() {
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main_map, container, false);
-            return rootView;
-        }
-
-        @Override
-        public void onAttach(Activity activity) {
-            super.onAttach(activity);
-            ((MainMapActivity) activity).onSectionAttached(
-                    getArguments().getInt(ARG_SECTION_NUMBER));
-        }
-    }
+//    /**
+//     * A placeholder fragment containing a simple view.
+//     */
+//    public static class PlaceholderFragment extends Fragment {
+//        /**
+//         * The fragment argument representing the section number for this
+//         * fragment.
+//         */
+//        private static final String ARG_SECTION_NUMBER = "section_number";
+//
+//        /**
+//         * Returns a new instance of this fragment for the given section
+//         * number.
+//         */
+//        public static PlaceholderFragment newInstance(int sectionNumber) {
+//            switch (sectionNumber){
+//                case 1:
+//                    break;
+//                case 2:
+//                    DatePickingFragment datePickingFragment = new DatePickingFragment();
+//                    return datePickingFragment;
+//                    break;
+//                case 3:
+//                    break;
+//            }
+//            PlaceholderFragment fragment = new PlaceholderFragment();
+//            Bundle args = new Bundle();
+//            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
+//            fragment.setArguments(args);
+//            return fragment;
+//        }
+//
+//        public PlaceholderFragment() {
+//        }
+//
+//        @Override
+//        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+//                                 Bundle savedInstanceState) {
+//            View rootView = inflater.inflate(R.layout.fragment_main_map, container, false);
+//            return rootView;
+//        }
+//
+//        @Override
+//        public void onAttach(Activity activity) {
+//            super.onAttach(activity);
+//            ((MainMapActivity) activity).onSectionAttached(
+//                    getArguments().getInt(ARG_SECTION_NUMBER));
+//        }
+//    }
 
 
 
