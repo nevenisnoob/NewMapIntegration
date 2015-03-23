@@ -31,7 +31,8 @@ import jp.co.drecom.newmapintegration.utils.NewToast;
 
 
 public class MainMapActivity extends ActionBarActivity
-        implements NavigationDrawerFragment.NavigationDrawerCallbacks {
+        implements NavigationDrawerFragment.NavigationDrawerCallbacks,
+        DatePickingFragment.OnDatePickListener{
 
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
@@ -265,6 +266,11 @@ public class MainMapActivity extends ActionBarActivity
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void getDateData(long startTime, long endTime) {
+        mapFragment.getDateData(startTime, endTime);
     }
 
 

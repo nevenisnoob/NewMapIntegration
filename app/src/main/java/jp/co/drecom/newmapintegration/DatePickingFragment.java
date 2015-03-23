@@ -1,6 +1,7 @@
 package jp.co.drecom.newmapintegration;
 
 
+import android.app.Activity;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.method.DateTimeKeyListener;
@@ -33,6 +34,12 @@ public class DatePickingFragment extends Fragment implements View.OnClickListene
 
     public DatePickingFragment() {
         // Required empty public constructor
+    }
+
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        datePickListener = (OnDatePickListener) activity;
     }
 
     //send data to Activity

@@ -47,8 +47,7 @@ public class NewMapFragment extends MapFragment implements
         GoogleMap.OnMarkerClickListener,
         GoogleMap.OnMarkerDragListener,
         GoogleMap.InfoWindowAdapter,
-        GoogleMap.OnInfoWindowClickListener,
-        DatePickingFragment.OnDatePickListener{
+        GoogleMap.OnInfoWindowClickListener {
 
     protected final static String BROADCASTER_ACTION= "jp.co.drecom.newmapintegration.location";
 
@@ -105,8 +104,9 @@ public class NewMapFragment extends MapFragment implements
         mMoveMapCamera = true;
         mLastLatitude = 0;
         mLastLongitude = 0;
+        //default time interval yesterday - current
         mStartUnixTime = (System.currentTimeMillis() / 1000) - 86400;
-        mEndUnixTime = mStartUnixTime;
+        mEndUnixTime = mStartUnixTime + 86400;
 
         buildGoogleApiClient();
 
@@ -262,7 +262,9 @@ public class NewMapFragment extends MapFragment implements
     public boolean onMyLocationButtonClick() {
         NewLog.logD("MyLocationButton clicked");
         mMoveMapCamera = true;
+        NewLog.logD("the start time is " + mStartUnixTime + " and the end time is " + mEndUnixTime);
         return false;
+
     }
 
     @Override
@@ -293,10 +295,12 @@ public class NewMapFragment extends MapFragment implements
 
     }
 
-    @Override
     public void getDateData(long startTime, long endTime) {
         mStartUnixTime = startTime;
         mEndUnixTime = endTime;
+        NewLog.logD("the NewMapFraagment.getDateData function is called");
+        drawFootPrint(mStartUnixTime, mEndUnixTime);
+
     }
 
 
@@ -344,6 +348,8 @@ public class NewMapFragment extends MapFragment implements
         if (mFootPrint == null || mGoogleMap == null) {
             return;
         }
+        mGoogleMap.clear();
+
 
         mLocationDBHelper.mLocationDB = mLocationDBHelper.getReadableDatabase();
         Cursor cursor = mLocationDBHelper.getLocationLog(startTime, endTime);

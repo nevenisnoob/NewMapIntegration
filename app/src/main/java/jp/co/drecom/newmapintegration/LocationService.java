@@ -25,6 +25,7 @@ import java.util.Date;
 import jp.co.drecom.newmapintegration.utils.LocationDBHelper;
 import jp.co.drecom.newmapintegration.utils.NewLog;
 
+
 //mouse points to class name, then press control + enter
 public class LocationService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
