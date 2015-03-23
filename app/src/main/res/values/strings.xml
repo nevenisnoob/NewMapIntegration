@@ -5,6 +5,7 @@
     <string name="title_section1">My Footprint</string>
     <string name="title_section2">Date Range</string>
     <string name="title_section3">Map Settings</string>
+    <string name="title_section4">Sign Up</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="action_example">Example action</string>
@@ -13,6 +14,10 @@
     <string name="end_date">End Date:</string>
     <string name="confirm_btn">Confirm</string>
     <string name="cancel_btn">Cancel</string>
+
+    <string name="sign_up_url">http://nevenisnoob.me/newmap/signUp.php</string>
+    <string name="data_update_url">http://nevenisnoob.me/newmap/dataUpdate.php</string>
+    <string name="sign_up_dialog_title">Email for Sign Up </string>
 
     <!-- google map API v2 KEY -->
     <string name="google_map_API_key">AIzaSyBWAT-JmZXKMcgEPj1jYf1tSrKZ7AomWvA</string>

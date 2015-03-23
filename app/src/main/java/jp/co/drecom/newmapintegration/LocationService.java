@@ -13,6 +13,10 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
@@ -21,6 +25,8 @@ import com.google.android.gms.location.LocationServices;
 
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import jp.co.drecom.newmapintegration.utils.LocationDBHelper;
 import jp.co.drecom.newmapintegration.utils.NewLog;
@@ -178,14 +184,17 @@ public class LocationService extends Service implements
 
 
 
-        //TODO
+
 
         if (whetherNeedUpdateLocation()) {
             rowID = mLocationDBHelper
-                    .saveDataToDB(mCurrentLatitude, mCurrentLongitude, mCurrentUnixTime);
+                    .saveLocationDataToDB(mCurrentLatitude, mCurrentLongitude, mCurrentUnixTime);
+            //TODO
+            //send data to server
             sendBroadcast(mLocationIntent);
             NewLog.logD("DB inserted, row ID is " + rowID);
         }
+
 
         NewLog.logD("the current time is " + mCurrentTime);
         NewLog.logD("the current unix time is " + mCurrentUnixTime);
@@ -215,6 +224,42 @@ public class LocationService extends Service implements
 
         }
         return true;
+    }
+
+    private void updateLocationDataToServer (final String userMail, final String userLatitude,
+                                             final String userLongitude, final String userUnixTime) {
+        NewLog.logD("the data sent to server is " + userMail + " " + userLatitude + " "
+                + userLongitude + " " + userUnixTime);
+
+        String dataUpdateURL = getString(R.string.data_update_url);
+        StringRequest stringRequest = new StringRequest(
+                Request.Method.POST, dataUpdateURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        NewLog.logD("sign up response " + response.toString());
+                        //TODO
+                        //receive the others' info: userMail, userLatitude, userLongitude
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                NewLog.logD("Error is " + error.getMessage());
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                //TODO
+                //change the mail.
+                params.put("user_email", userMail);
+                params.put("user_latitude", userLatitude);
+                params.put("user_longitude", userLongitude);
+                params.put("user_unixtime", userUnixTime);
+                return params;
+            }
+        };
+        AppController.getInstance().addToRequestQueue(stringRequest);
     }
 
 }

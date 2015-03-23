@@ -1,7 +1,9 @@
 package jp.co.drecom.newmapintegration;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
@@ -24,7 +26,19 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.support.v4.widget.DrawerLayout;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.TextView;
+
+import com.android.volley.Request;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
+
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import jp.co.drecom.newmapintegration.utils.NewLog;
 import jp.co.drecom.newmapintegration.utils.NewToast;
@@ -210,8 +224,20 @@ public class MainMapActivity extends ActionBarActivity
                             .replace(R.id.container, datePickingFragment).commit();
                 }
                 break;
+            //map settings: such as update interval, accuracy
             case 2:
                 break;
+            //email sign up, email and user_ID
+            //send email to server, then get user_ID.
+            //save user_ID and email to DB
+            case 3:
+                createDialog(AppController.SIGN_UP_DIALOG);
+
+                break;
+            //realTime
+            case 4:
+                break;
+
         }
 //        fragmentManager.beginTransaction()
 //                .replace(R.id.container, PlaceholderFragment.newInstance(position + 1))
@@ -274,6 +300,37 @@ public class MainMapActivity extends ActionBarActivity
     }
 
 
+    private void signUpWithMail (final String mail) {
+        NewLog.logD("the mail is " + mail);
+        String signUpURL = getString(R.string.sign_up_url);
+        StringRequest stringRequest = new StringRequest(
+                Request.Method.POST, signUpURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        NewLog.logD("sign up response " + response.toString());
+                        //TODO
+                        //receive the user ID and update the DB
+                    }
+                }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                NewLog.logD("Error is " + error.getMessage());
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                //TODO
+                //change the mail.
+                params.put("user_email", mail);
+                return params;
+            }
+        };
+        AppController.getInstance().addToRequestQueue(stringRequest);
+    }
+
 //    /**
 //     * A placeholder fragment containing a simple view.
 //     */
@@ -324,6 +381,39 @@ public class MainMapActivity extends ActionBarActivity
 //        }
 //    }
 
+    public void createDialog (int dialogType) {
+        switch (dialogType) {
+            case AppController.SIGN_UP_DIALOG:
+                LayoutInflater inflater = (LayoutInflater)this.
+                        getSystemService(LAYOUT_INFLATER_SERVICE);
+                final View layout = inflater.inflate(R.layout.sign_up_dialog,
+                        (ViewGroup) findViewById(R.id.signup_dialog_root));
+                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder.setTitle(getString(R.string.sign_up_dialog_title));
+                builder.setView(layout);
+                builder.setPositiveButton(getString(R.string.confirm_btn),
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                EditText userMail = (EditText) layout.findViewById(R.id.sign_up_email);
+                                String userMailText = userMail.getText().toString();
+                                if (userMailText != null) {
+                                    signUpWithMail(userMailText);
+                                }
 
+                            }
+                });
+                builder.setNegativeButton(getString(R.string.cancel_btn),
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        });
+                builder.create().show();
+                break;
+        }
+
+    }
 
 }
