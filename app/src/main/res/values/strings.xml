@@ -15,8 +15,8 @@
     <string name="confirm_btn">Confirm</string>
     <string name="cancel_btn">Cancel</string>
 
-    <string name="sign_up_url">http://nevenisnoob.me/newmap/signUp.php</string>
-    <string name="data_update_url">http://nevenisnoob.me/newmap/dataUpdate.php</string>
+    <string name="sign_up_url">http://192.168.201.105/signup.php</string>
+    <string name="data_update_url">http://192.168.201.105/location.php</string>
     <string name="sign_up_dialog_title">Email for Sign Up </string>
 
     <!-- google map API v2 KEY -->

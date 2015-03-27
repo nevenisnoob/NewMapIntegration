@@ -52,7 +52,8 @@ public class LocationDBHelper extends SQLiteOpenHelper {
             + MY_ACCOUNT_MAIL + " text) ";
     public static final String DELETE_MY_ACCOUNT_TABLE = "drop table if exists "
             + MY_ACCOUNT_TABLE_NAME;
-
+//    private static String UPDATE_USER_ID = "update " + MY_ACCOUNT_TABLE_NAME
+//            + " set " + MY_ACCOUNT_ID + " = ? where " + MY_ACCOUNT_MAIL + " = " +
     //***********************MyAccountTable*****************************//
 
 
@@ -107,11 +108,28 @@ public class LocationDBHelper extends SQLiteOpenHelper {
     public int updateAccountID (int userID, String userMail) {
         ContentValues values = new ContentValues();
         values.put(MY_ACCOUNT_ID, userID);
-        String selection = MY_ACCOUNT_MAIL + " = '?'";
+        String selection = MY_ACCOUNT_MAIL + " = ?";
         String[] selectionArgs = {userMail};
         return mLocationDB.update(MY_ACCOUNT_TABLE_NAME,
                 values, selection, selectionArgs);
+
         //return the number of rows affected
+    }
+
+    public String getUserAccount () {
+        String[] columns = {MY_ACCOUNT_MAIL};
+        Cursor cursor = mLocationDB.query(
+                MY_ACCOUNT_TABLE_NAME,
+                columns,
+                null,null,null,null,null);
+        boolean isEof = cursor.moveToFirst();
+        if (isEof) {
+            String userMail = cursor.getString(0);
+            NewLog.logD("login user mail is " + userMail);
+            return userMail;
+        }
+        return null;
+
     }
 
 

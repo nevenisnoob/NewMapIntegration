@@ -16,11 +16,24 @@ import com.android.volley.toolbox.Volley;
  */
 public class AppController extends Application {
 
+    public final static String BROADCAST_SELF_ACTION= "jp.co.drecom.newmapintegration.location";
+    public final static String BROADCAST_ELSE_ACTION = "jp.co.drecom.newmapintegration.otherLocation";
+
     public static final int SIGN_UP_DIALOG = 1;
 
     public static final String TAG = "NewMapIntegration";
 
     public static String USER_MAIL = "Please Sign Up";
+
+    //the distance of two points (35.631260n 139.712820w), (35.631269n 139.712829w) is 1.3m
+    //the distance of two points (35.631260n 139.712820w), (35.631280n 139.712840w) is 2.9m
+    public static double NORMAL_TOLERANCE = 0.00002;
+    public static double ACCURATE_TOLERANCE = 0.000009;
+
+    public static int MAX_SPOT_PER_POLYLINE = 1000;
+
+
+
 
     private static AppController mInstance;
 

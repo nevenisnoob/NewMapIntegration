@@ -40,6 +40,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
+import jp.co.drecom.newmapintegration.utils.LocationDBHelper;
 import jp.co.drecom.newmapintegration.utils.NewLog;
 import jp.co.drecom.newmapintegration.utils.NewToast;
 
@@ -57,6 +58,8 @@ public class MainMapActivity extends ActionBarActivity
     private DatePickingFragment datePickingFragment;
 
     private Intent mLocationServiceIntent;
+
+    private LocationDBHelper mSignUpDBHelper;
 
 
 
@@ -87,9 +90,14 @@ public class MainMapActivity extends ActionBarActivity
 
         setContentView(R.layout.activity_main_map);
 
+        mSignUpDBHelper = new LocationDBHelper(this);
+
+
+
         mNavigationDrawerFragment = (NavigationDrawerFragment)
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
-        mTitle = getTitle();
+//        mTitle = getTitle();
+        mTitle = getUserAccountInfo();
 
         // Set up the drawer.
         mNavigationDrawerFragment.setUp(
@@ -105,6 +113,20 @@ public class MainMapActivity extends ActionBarActivity
 
         mLocationServiceIntent = new Intent(this, LocationService.class);
         startService(mLocationServiceIntent);
+    }
+
+
+    private String getUserAccountInfo() {
+        mSignUpDBHelper.mLocationDB = mSignUpDBHelper.getReadableDatabase();
+        String userAccount = mSignUpDBHelper.getUserAccount();
+        mSignUpDBHelper.close();
+        if (userAccount == null) {
+            return "Please Sign Up";
+        } else {
+            AppController.USER_MAIL = userAccount;
+            return userAccount;
+        }
+
     }
 
 
@@ -302,15 +324,38 @@ public class MainMapActivity extends ActionBarActivity
 
     private void signUpWithMail (final String mail) {
         NewLog.logD("the mail is " + mail);
+        mSignUpDBHelper.mLocationDB = mSignUpDBHelper.getWritableDatabase();
+        if (-1 == mSignUpDBHelper.saveAccountMailToDB(mail)) {
+            NewLog.logD("user mail insert failed");
+            return;
+        }
+
         String signUpURL = getString(R.string.sign_up_url);
         StringRequest stringRequest = new StringRequest(
                 Request.Method.POST, signUpURL,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
-                        NewLog.logD("sign up response " + response.toString());
-                        //TODO
-                        //receive the user ID and update the DB
+                        try {
+                            int userID = Integer.parseInt(response.toString());
+                            NewLog.logD("sign up response " + userID);
+                            //TODO
+                            //receive the user ID and update the DB
+                            int flag = mSignUpDBHelper.updateAccountID(userID, mail);
+                            mSignUpDBHelper.close();
+                            if (flag != 0) {
+                                NewLog.logD("sign up succeed.");
+                                AppController.USER_MAIL = mail;
+                                mTitle = AppController.USER_MAIL;
+                                restoreActionBar();
+                            } else {
+                                NewLog.logD("sign up failed.");
+                            }
+                        } catch (NumberFormatException e) {
+                            NewLog.logD("the data from server is strange. " + e.toString());
+                        }
+
+
                     }
                 }, new Response.ErrorListener() {
 
@@ -324,13 +369,12 @@ public class MainMapActivity extends ActionBarActivity
                 Map<String, String> params = new HashMap<String, String>();
                 //TODO
                 //change the mail.
-                params.put("user_email", mail);
+                params.put("user_mail", mail);
                 return params;
             }
         };
         AppController.getInstance().addToRequestQueue(stringRequest);
     }
-
 //    /**
 //     * A placeholder fragment containing a simple view.
 //     */

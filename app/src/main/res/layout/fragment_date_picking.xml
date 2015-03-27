@@ -4,68 +4,66 @@
     android:layout_height="match_parent"
     android:background="@android:color/white"
     tools:context="jp.co.drecom.newmapintegration.DatePickingFragment">
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-        <RelativeLayout
+
+    <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="48dp"
-        android:id="@+id/first_label"
-        android:layout_margin="8dp"
-        android:text="@string/start_date"
-        android:textSize="24dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:id="@+id/first_label"
+            android:layout_margin="8dp"
+            android:text="@string/start_date"
+            android:textSize="24dp"/>
 
-    <DatePicker
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="48dp"
-        android:layout_marginRight="48dp"
-        android:layout_marginTop="-48dp"
-        android:layout_marginBottom="-24dp"
-        android:layout_below="@id/first_label"
-        android:layout_centerHorizontal="true"
-        android:calendarViewShown="false"
-        android:id="@+id/start_date_picker" />
+        <DatePicker
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="48dp"
+            android:layout_marginRight="48dp"
+            android:layout_marginTop="-48dp"
+            android:layout_marginBottom="-24dp"
+            android:layout_below="@id/first_label"
+            android:layout_centerHorizontal="true"
+            android:calendarViewShown="false"
+            android:id="@+id/start_date_picker" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="48dp"
-        android:layout_margin="8dp"
-        android:id="@+id/second_label"
-        android:layout_below="@id/start_date_picker"
-        android:text="@string/end_date"
-        android:textSize="24dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_margin="8dp"
+            android:id="@+id/second_label"
+            android:layout_below="@id/start_date_picker"
+            android:text="@string/end_date"
+            android:textSize="24dp"/>
 
-    <DatePicker
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="48dp"
-        android:layout_marginRight="48dp"
-        android:layout_marginTop="-48dp"
-        android:layout_marginBottom="-24dp"
-        android:layout_below="@id/second_label"
-        android:layout_centerHorizontal="true"
-        android:calendarViewShown="false"
-        android:id="@+id/end_date_picker" />
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:layout_below="@id/end_date_picker"
-        android:text="@string/cancel_btn"
-        android:id="@+id/cancel_btn"/>
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:layout_below="@id/end_date_picker"
-        android:layout_toRightOf="@id/cancel_btn"
-        android:text="@string/confirm_btn"
-        android:id="@+id/confirm_btn"/>
-        </RelativeLayout>
-    </ScrollView>
+        <DatePicker
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="48dp"
+            android:layout_marginRight="48dp"
+            android:layout_marginTop="-48dp"
+            android:layout_marginBottom="-24dp"
+            android:layout_below="@id/second_label"
+            android:layout_centerHorizontal="true"
+            android:calendarViewShown="false"
+            android:id="@+id/end_date_picker" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_below="@id/end_date_picker"
+            android:text="@string/cancel_btn"
+            android:id="@+id/cancel_btn"/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:layout_below="@id/end_date_picker"
+            android:layout_toRightOf="@id/cancel_btn"
+            android:text="@string/confirm_btn"
+            android:id="@+id/confirm_btn"/>
+    </RelativeLayout>
+
 </RelativeLayout>
