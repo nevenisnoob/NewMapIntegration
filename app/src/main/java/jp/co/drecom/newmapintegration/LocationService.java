@@ -1,12 +1,21 @@
 package jp.co.drecom.newmapintegration;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.SupplicantState;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -45,12 +54,7 @@ public class LocationService extends Service implements
 
     //foreground mode 30 second update
     //background mode: 60 second update
-    private static long UPDATE_INTERVAL_IN_MILLISECONDS = 30000;
 
-    private static final long UPDATE_INTERVAL_STEP = 30000;
-
-    private static long FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS =
-            UPDATE_INTERVAL_IN_MILLISECONDS / 2;
 
 
 
@@ -79,6 +83,10 @@ public class LocationService extends Service implements
 
     private Intent mLocationIntent = new Intent(AppController.BROADCAST_SELF_ACTION);
 
+    private String mFriendMailList;
+
+    private WifiStatusUserSettingChangedReceiver mWifiReceiver;
+
 
 
     public LocationService() {
@@ -92,6 +100,13 @@ public class LocationService extends Service implements
         mLastLatitude = 0;
         mLastLongitude = 0;
 
+        mWifiReceiver = new WifiStatusUserSettingChangedReceiver();
+        IntentFilter intentfilter = new IntentFilter();
+        intentfilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        intentfilter.addAction(AppController.BROADCAST_UPDATE_INTERVAL);
+        this.registerReceiver(mWifiReceiver, intentfilter);
+
+//        updateOnlineStatusToServer(AppController.USER_MAIL, String.valueOf(1));
 
         NewLog.logD("service onCreate");
 
@@ -108,11 +123,11 @@ public class LocationService extends Service implements
 
     private synchronized void createLocationRequest() {
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(UPDATE_INTERVAL_IN_MILLISECONDS);
-        mLocationRequest.setFastestInterval(FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setInterval(AppController.UPDATE_INTERVAL_IN_MILLISECONDS);
+        mLocationRequest.setFastestInterval(AppController.FASTEST_UPDATE_INTERVAL_IN_MILLISECONDS);
 
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-//        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY); //100
+//        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY); //102
 //        mLocationRequest.setPriority(LocationRequest.PRIORITY_LOW_POWER);
     }
 
@@ -130,6 +145,7 @@ public class LocationService extends Service implements
         createLocationRequest();
         initLocationDB();
 
+
         if (mGoogleApiClient != null) {
             mGoogleApiClient.connect();
         }
@@ -139,17 +155,23 @@ public class LocationService extends Service implements
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
+
         mLocationDBHelper.mLocationDB.close();
         NewLog.logD("service onDestroy");
         if (mGoogleApiClient != null) {
             mGoogleApiClient.disconnect();
         }
+        if (mWifiReceiver != null) {
+            this.unregisterReceiver(mWifiReceiver);
+        }
+        super.onDestroy();
+
+
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        // TODO: Return the communication channel to the service.
+        //Return the communication channel to the service.
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
@@ -157,6 +179,8 @@ public class LocationService extends Service implements
     public void onConnected(Bundle bundle) {
         NewLog.logD("service googleApiClient connected");
         startLocationUpdates();
+        //send the online status to server
+
     }
 
     private void startLocationUpdates() {
@@ -176,7 +200,6 @@ public class LocationService extends Service implements
 
     @Override
     public void onLocationChanged(Location location) {
-        //TODO
         //add current time
         mLastLatitude = mCurrentLatitude;
         mLastLongitude = mCurrentLongitude;
@@ -189,8 +212,18 @@ public class LocationService extends Service implements
         mCurrentTime = DateFormat.getDateTimeInstance().format(new Date());
         mCurrentUnixTime = (System.currentTimeMillis() / 1000L);
 
+        mFriendMailList = mLocationDBHelper.getFriendMailList();
+
+        //TODO?
+        //always send and receive data to/from server every 30 seconds.
         if (true) {
+//            updateLocationDataToServer(AppController.USER_MAIL,
+//                    String.valueOf(mCurrentLatitude),
+//                    String.valueOf(mCurrentLongitude),
+//                    String.valueOf(mCurrentUnixTime));
+
             updateLocationDataToServer(AppController.USER_MAIL,
+                    mFriendMailList,
                     String.valueOf(mCurrentLatitude),
                     String.valueOf(mCurrentLongitude),
                     String.valueOf(mCurrentUnixTime));
@@ -199,7 +232,6 @@ public class LocationService extends Service implements
         if (whetherNeedUpdateLocation()) {
             rowID = mLocationDBHelper
                     .saveLocationDataToDB(mCurrentLatitude, mCurrentLongitude, mCurrentUnixTime);
-            //TODO
             //send data to server
 
             sendBroadcast(mLocationIntent);
@@ -210,6 +242,7 @@ public class LocationService extends Service implements
         NewLog.logD("the current time is " + mCurrentTime);
         NewLog.logD("the current unix time is " + mCurrentUnixTime);
         NewLog.logD("service location changed" + mCurrentLocation);
+        NewLog.logD("the current accuracy is " + mLocationRequest.getPriority());
 
     }
 
@@ -259,7 +292,6 @@ public class LocationService extends Service implements
                     public void onResponse(String response) {
                         String jsonString = response.toString();
                         NewLog.logD("sign up response " + jsonString);
-                        //TODO
                         //receive the others' info: userMail, userLatitude, userLongitude
                         updateLocationDataCallback(jsonString);
                     }
@@ -272,7 +304,6 @@ public class LocationService extends Service implements
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<String, String>();
-                //TODO
                 //change the mail.
                 params.put("user_email", userMail);
                 params.put("user_latitude", userLatitude);
@@ -313,5 +344,97 @@ public class LocationService extends Service implements
 //        };
 //        AppController.getInstance().addToRequestQueue(jsonArrayRequest);
     }
+
+    //only receive the friend location info by setting the friendMail[]
+    private void updateLocationDataToServer (final String userMail, final String friendMailList,
+                                             final String userLatitude,
+                                             final String userLongitude, final String userUnixTime) {
+
+        if (!AppController.SHARE_LOCATION) {
+            return;
+        }
+        String dataUpdateURL = getString(R.string.data_update_url);
+        StringRequest stringRequest = new StringRequest(
+                Request.Method.POST, dataUpdateURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        String jsonString = response.toString();
+                        NewLog.logD("sign up response " + jsonString);
+                        //receive the others' info: userMail, userLatitude, userLongitude
+                        updateLocationDataCallback(jsonString);
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                NewLog.logD("Error is " + error.getMessage());
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                //change the mail.
+                params.put("user_email", userMail);
+                //fix the "own location info is not updated" issue.
+                if (friendMailList != null) {
+                    params.put("user_friend_mail", friendMailList);
+                }
+
+                params.put("user_latitude", userLatitude);
+                params.put("user_longitude", userLongitude);
+                params.put("user_unixtime", userUnixTime);
+                return params;
+            }
+        };
+        AppController.getInstance().addToRequestQueue(stringRequest);
+
+    }
+
+
+
+    //***********************NetworkChangeReceiver**************************//
+    public class WifiStatusUserSettingChangedReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //TODO
+
+            if (intent.getAction().equalsIgnoreCase(AppController.BROADCAST_UPDATE_INTERVAL)) {
+                if (mGoogleApiClient.isConnected()) {
+                    mLocationRequest.setInterval(AppController.UPDATE_INTERVAL_IN_MILLISECONDS);
+                    LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, LocationService.this);
+                    LocationServices.FusedLocationApi.requestLocationUpdates(
+                            mGoogleApiClient, mLocationRequest, LocationService.this);
+                    NewLog.logD("location interval changed " + AppController.UPDATE_INTERVAL_IN_MILLISECONDS);
+                }
+            }
+
+            ConnectivityManager conMan = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo netInfo = conMan.getActiveNetworkInfo();
+            if (netInfo != null && netInfo.getType() == ConnectivityManager.TYPE_WIFI) {
+                NewLog.logD("Have Wifi Connection");
+                if (mGoogleApiClient.isConnected()) {
+                    mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+                    LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, LocationService.this);
+                    LocationServices.FusedLocationApi.requestLocationUpdates(
+                            mGoogleApiClient, mLocationRequest, LocationService.this);
+                    NewLog.logD("locationRequest changed to wifi");
+                }
+            }
+
+            else {
+                NewLog.logD("No Wifi Connection");
+                if (mGoogleApiClient.isConnected()) {
+                    mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                    LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient,LocationService.this);
+                    LocationServices.FusedLocationApi.requestLocationUpdates(
+                            mGoogleApiClient, mLocationRequest, LocationService.this);
+                    NewLog.logD("locationRequest changed to no wifi");
+                }
+            }
+
+        }
+    }
+    //***********************NetworkChangeReceiver**************************//
 
 }

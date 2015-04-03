@@ -23,6 +23,8 @@ import jp.co.drecom.newmapintegration.utils.NewLog;
 //notice that never fix android.support.v4.app.Fragment with android.app.Fragment
 public class DatePickingFragment extends Fragment implements View.OnClickListener {
 
+    public static String FRAGMENT_TAG = "DatePickingFragment";
+
     private DatePicker startDatePicker;
     private DatePicker endDatePicker;
     private Button confirmBtn;

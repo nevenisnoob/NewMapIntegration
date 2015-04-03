@@ -1,0 +1,18 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="jp.co.drecom.newmapintegration.FriendListFragment"
+    android:background="@android:color/white">
+
+    <com.fortysevendeg.swipelistview.SwipeListView
+        xmlns:swipe="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/friendListView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        swipe:swipeFrontView="@+id/swipeFront"
+        swipe:swipeBackView="@+id/swipeBack"
+        swipe:swipeMode="right"
+        swipe:swipeOffsetRight="160dp"/>
+
+</FrameLayout>

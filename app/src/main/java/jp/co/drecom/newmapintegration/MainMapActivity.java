@@ -47,19 +47,25 @@ import jp.co.drecom.newmapintegration.utils.NewToast;
 
 public class MainMapActivity extends ActionBarActivity
         implements NavigationDrawerFragment.NavigationDrawerCallbacks,
-        DatePickingFragment.OnDatePickListener{
+        DatePickingFragment.OnDatePickListener {
 
     /**
      * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
      */
+
+    private static final int SIGN_UP_DIALOG = 1;
+    private static final int ADD_FRIEND_DIALOG = 2;
+
     private NavigationDrawerFragment mNavigationDrawerFragment;
 
     private NewMapFragment mapFragment;
     private DatePickingFragment datePickingFragment;
+    private FriendListFragment friendListFragment;
+    private MapSettingFragment mapSettingFragment;
 
     private Intent mLocationServiceIntent;
 
-    private LocationDBHelper mSignUpDBHelper;
+    private LocationDBHelper mDBHelper;
 
 
 
@@ -90,7 +96,7 @@ public class MainMapActivity extends ActionBarActivity
 
         setContentView(R.layout.activity_main_map);
 
-        mSignUpDBHelper = new LocationDBHelper(this);
+        mDBHelper = new LocationDBHelper(this);
 
 
 
@@ -98,6 +104,7 @@ public class MainMapActivity extends ActionBarActivity
                 getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
 //        mTitle = getTitle();
         mTitle = getUserAccountInfo();
+        getMapSettingFootPrint();
 
         // Set up the drawer.
         mNavigationDrawerFragment.setUp(
@@ -115,11 +122,20 @@ public class MainMapActivity extends ActionBarActivity
         startService(mLocationServiceIntent);
     }
 
+    private void getMapSettingFootPrint() {
+        mDBHelper.mLocationDB = mDBHelper.getReadableDatabase();
+        String showFootprint = mDBHelper.getMySettingDataFootprint();
+        if (showFootprint.equalsIgnoreCase("1")) {
+            AppController.SHOW_FOOT_PRINT = true;
+        } else {
+            AppController.SHOW_FOOT_PRINT = false;
+        }
+    }
 
     private String getUserAccountInfo() {
-        mSignUpDBHelper.mLocationDB = mSignUpDBHelper.getReadableDatabase();
-        String userAccount = mSignUpDBHelper.getUserAccount();
-        mSignUpDBHelper.close();
+        mDBHelper.mLocationDB = mDBHelper.getReadableDatabase();
+        String userAccount = mDBHelper.getUserAccount();
+        mDBHelper.close();
         if (userAccount == null) {
             return "Please Sign Up";
         } else {
@@ -128,9 +144,6 @@ public class MainMapActivity extends ActionBarActivity
         }
 
     }
-
-
-
 
 
     private void updateValuesFromBundle(Bundle savedInstanceState) {
@@ -174,6 +187,37 @@ public class MainMapActivity extends ActionBarActivity
         super.onStop();
 
         NewLog.logD("onStop");
+    }
+
+    private void updateOnlineStatusToServer (final String userMail, final String onlineStatus) {
+
+        String onlineStatusURL = getString(R.string.online_status_url);
+        StringRequest stringRequest = new StringRequest(
+                Request.Method.POST, onlineStatusURL,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        String responseString = response.toString();
+                        NewLog.logD("online status update response " + responseString);
+
+                    }
+                }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                NewLog.logD("Error is " + error.getMessage());
+            }
+        }) {
+            @Override
+            protected Map<String, String> getParams() {
+                Map<String, String> params = new HashMap<String, String>();
+                //change the mail.
+                params.put("user_email", userMail);
+                params.put("user_online", onlineStatus);
+                return params;
+            }
+        };
+        AppController.getInstance().addToRequestQueue(stringRequest);
+        NewLog.logD("service destroyed, updateOnlineStatusToServer is called");
     }
 
     @Override
@@ -235,29 +279,67 @@ public class MainMapActivity extends ActionBarActivity
                     fragmentManager.beginTransaction()
                             .remove(datePickingFragment).commit();
                 }
+                if (friendListFragment != null) {
+                    fragmentManager.beginTransaction()
+                            .remove(friendListFragment).commit();
+                }
+                if (mapSettingFragment != null) {
+                    fragmentManager.beginTransaction().remove(mapSettingFragment).commit();
+                }
+//                if (mapFragment != null) {
+//                    //refresh mapFragment
+//                    NewLog.logD("map refreshed");
+////                    mapFragment.refreshMapAfterSetting();
+//
+//                }
+
                 break;
             case 1:
                 if (datePickingFragment == null) {
                     datePickingFragment = new DatePickingFragment();
-                    fragmentManager.beginTransaction()
-                            .add(R.id.container, datePickingFragment).commit();
-                } else {
-                    fragmentManager.beginTransaction()
-                            .replace(R.id.container, datePickingFragment).commit();
+//                    fragmentManager.beginTransaction()
+//                            .add(R.id.container, datePickingFragment).commit();
                 }
+                fragmentManager.beginTransaction()
+                        .replace(R.id.container, datePickingFragment,
+                                datePickingFragment.FRAGMENT_TAG).commit();
+
                 break;
             //map settings: such as update interval, accuracy
             case 2:
+                if (friendListFragment == null) {
+                    friendListFragment = new FriendListFragment();
+                }
+                fragmentManager.beginTransaction()
+                        .replace(R.id.container, friendListFragment,
+                                friendListFragment.FRAGMENT_TAG).commit();
+
                 break;
             //email sign up, email and user_ID
             //send email to server, then get user_ID.
             //save user_ID and email to DB
             case 3:
-                createDialog(AppController.SIGN_UP_DIALOG);
-
+                if (mapSettingFragment == null) {
+                    mapSettingFragment = new MapSettingFragment();
+                }
+                fragmentManager.beginTransaction()
+                        .replace(R.id.container, mapSettingFragment,
+                                mapSettingFragment.FRAGMENT_TAG).commit();
                 break;
             //realTime
             case 4:
+                if (datePickingFragment != null) {
+                    fragmentManager.beginTransaction()
+                            .remove(datePickingFragment).commit();
+                }
+                if (friendListFragment != null) {
+                    fragmentManager.beginTransaction()
+                            .remove(friendListFragment).commit();
+                }
+                if (mapSettingFragment != null) {
+                    fragmentManager.beginTransaction().remove(mapSettingFragment).commit();
+                }
+                createDialog(SIGN_UP_DIALOG);
                 break;
 
         }
@@ -294,7 +376,18 @@ public class MainMapActivity extends ActionBarActivity
             // Only show items in the action bar relevant to this screen
             // if the drawer is not showing. Otherwise, let the drawer
             // decide what to show in the action bar.
-            getMenuInflater().inflate(R.menu.main_map, menu);
+
+            if (friendListFragment != null) {
+                if (friendListFragment.isAdded()) {
+                    menu.add(0, Menu.FIRST, Menu.NONE, "ADD").setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+                } else {
+//                    getMenuInflater().inflate(R.menu.main_map, menu);
+                }
+            } else {
+//                getMenuInflater().inflate(R.menu.main_map, menu);
+            }
+
+
             restoreActionBar();
             return true;
         }
@@ -307,11 +400,18 @@ public class MainMapActivity extends ActionBarActivity
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
+        String menuTitle = (String) item.getTitle();
+        if (menuTitle != null) {
+            if (menuTitle.equalsIgnoreCase("ADD")) {
+//            NewToast.toastS(this, "add is clicked");
+                createDialog(ADD_FRIEND_DIALOG);
+            }
+        }
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
+//        if (id == R.id.action_settings) {
+//            return true;
+//        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -324,11 +424,7 @@ public class MainMapActivity extends ActionBarActivity
 
     private void signUpWithMail (final String mail) {
         NewLog.logD("the mail is " + mail);
-        mSignUpDBHelper.mLocationDB = mSignUpDBHelper.getWritableDatabase();
-        if (-1 == mSignUpDBHelper.saveAccountMailToDB(mail)) {
-            NewLog.logD("user mail insert failed");
-            return;
-        }
+
 
         String signUpURL = getString(R.string.sign_up_url);
         StringRequest stringRequest = new StringRequest(
@@ -339,11 +435,14 @@ public class MainMapActivity extends ActionBarActivity
                         try {
                             int userID = Integer.parseInt(response.toString());
                             NewLog.logD("sign up response " + userID);
-                            //TODO
+
+                            mDBHelper.mLocationDB = mDBHelper.getWritableDatabase();
+                            long flag = mDBHelper.saveAccountMailToDB(userID, mail);
+
                             //receive the user ID and update the DB
-                            int flag = mSignUpDBHelper.updateAccountID(userID, mail);
-                            mSignUpDBHelper.close();
-                            if (flag != 0) {
+//                            int flag = mDBHelper.updateAccountID(userID, mail);
+                            mDBHelper.close();
+                            if (flag != -1) {
                                 NewLog.logD("sign up succeed.");
                                 AppController.USER_MAIL = mail;
                                 mTitle = AppController.USER_MAIL;
@@ -353,6 +452,7 @@ public class MainMapActivity extends ActionBarActivity
                             }
                         } catch (NumberFormatException e) {
                             NewLog.logD("the data from server is strange. " + e.toString());
+
                         }
 
 
@@ -367,7 +467,7 @@ public class MainMapActivity extends ActionBarActivity
             @Override
             protected Map<String, String> getParams() {
                 Map<String, String> params = new HashMap<String, String>();
-                //TODO
+
                 //change the mail.
                 params.put("user_mail", mail);
                 return params;
@@ -426,13 +526,16 @@ public class MainMapActivity extends ActionBarActivity
 //    }
 
     public void createDialog (int dialogType) {
+        LayoutInflater inflater = (LayoutInflater)this.
+                getSystemService(LAYOUT_INFLATER_SERVICE);
+        final View layout;
+        AlertDialog.Builder builder;
+
         switch (dialogType) {
-            case AppController.SIGN_UP_DIALOG:
-                LayoutInflater inflater = (LayoutInflater)this.
-                        getSystemService(LAYOUT_INFLATER_SERVICE);
-                final View layout = inflater.inflate(R.layout.sign_up_dialog,
+            case SIGN_UP_DIALOG:
+                layout = inflater.inflate(R.layout.sign_up_dialog,
                         (ViewGroup) findViewById(R.id.signup_dialog_root));
-                AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                builder = new AlertDialog.Builder(this);
                 builder.setTitle(getString(R.string.sign_up_dialog_title));
                 builder.setView(layout);
                 builder.setPositiveButton(getString(R.string.confirm_btn),
@@ -456,8 +559,49 @@ public class MainMapActivity extends ActionBarActivity
                         });
                 builder.create().show();
                 break;
+            case ADD_FRIEND_DIALOG:
+                layout = inflater.inflate(R.layout.add_friend_dialog,
+                        (ViewGroup) findViewById(R.id.add_friend_dialog_root));
+                builder = new AlertDialog.Builder(this);
+                builder.setTitle(getString(R.string.add_friend_dialog_title));
+                builder.setView(layout);
+                builder.setPositiveButton(getString(R.string.confirm_btn),
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                EditText friendMail = (EditText) layout.findViewById(R.id.friend_email);
+                                String friendMailText = friendMail.getText().toString();
+                                if (friendMailText != null) {
+                                    addFriendMail(friendMailText);
+                                }
+
+                            }
+                        });
+                builder.setNegativeButton(getString(R.string.cancel_btn),
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        });
+                builder.create().show();
+                break;
         }
 
+    }
+
+
+    private void addFriendMail(String mail) {
+        mDBHelper.mLocationDB = mDBHelper.getWritableDatabase();
+        if (-1 == mDBHelper.saveFriendInfo(mail, "")) {
+            NewLog.logD("friend mail insert failed");
+            return;
+        }
+        if (friendListFragment != null) {
+            //refresh friend list data after adding friend
+            friendListFragment.friendListUpdate();
+        }
+        NewLog.logD("friend mail is " + mail);
     }
 
 }

@@ -1,0 +1,92 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    tools:context="jp.co.drecom.newmapintegration.MapSettingFragment">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:id="@+id/first_part"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:textSize="18dp"
+                android:layout_gravity="center_vertical"
+                android:text="@string/setting_show_footprint" />
+
+            <Switch
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/show_footprint" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/second_part"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:orientation="horizontal"
+            android:layout_below="@id/first_part">
+            <TextView
+                android:layout_width="160dp"
+                android:layout_height="wrap_content"
+                android:textSize="18dp"
+                android:layout_gravity="center_vertical"
+                android:text="@string/setting_share_location" />
+
+            <Switch
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/share_location" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/third_part"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:orientation="vertical"
+            android:layout_below="@id/second_part">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="18dp"
+                android:text="@string/setting_update_interval" />
+
+            <RadioGroup
+                android:id="@+id/update_radio_group"
+                android:layout_margin="8dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+                <RadioButton
+                    android:id="@+id/radio_5sec"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/radio_5sec"/>
+                <RadioButton
+                    android:id="@+id/radio_30sec"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/radio_30sec"/>
+                <RadioButton
+                    android:id="@+id/radio_5min"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/radio_5min"/>
+                <RadioButton
+                    android:id="@+id/radio_30min"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/radio_30min"/>
+            </RadioGroup>
+        </LinearLayout>
+
+
+    </RelativeLayout>
+</FrameLayout>

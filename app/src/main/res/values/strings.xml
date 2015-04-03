@@ -4,8 +4,9 @@
     <string name="app_name">NewMapIntegration</string>
     <string name="title_section1">My Footprint</string>
     <string name="title_section2">Date Range</string>
-    <string name="title_section3">Map Settings</string>
-    <string name="title_section4">Sign Up</string>
+    <string name="title_section3">Friend List</string>
+    <string name="title_section4">Map Settings</string>
+    <string name="title_section5">Sign Up</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="action_example">Example action</string>
@@ -15,9 +16,23 @@
     <string name="confirm_btn">Confirm</string>
     <string name="cancel_btn">Cancel</string>
 
+    <string name="friend_edit_btn">Edit</string>
+    <string name="friend_delete_btn">Delete</string>
+
     <string name="sign_up_url">http://192.168.201.105/signup.php</string>
     <string name="data_update_url">http://192.168.201.105/location.php</string>
+    <string name="online_status_url">http://192.168.201.105/online.php</string>
     <string name="sign_up_dialog_title">Email for Sign Up </string>
+    <string name="add_friend_dialog_title">Enter Friends Email</string>
+
+    <string name="setting_show_footprint">FootPrint</string>
+    <string name="setting_share_location">Share Location</string>
+    <string name="setting_update_interval">Update Interval</string>
+
+    <string name="radio_5sec">5 seconds</string>
+    <string name="radio_30sec">30 seconds</string>
+    <string name="radio_5min">5 minutes</string>
+    <string name="radio_30min">30 minutes</string>
 
     <!-- google map API v2 KEY -->
     <string name="google_map_API_key">AIzaSyBWAT-JmZXKMcgEPj1jYf1tSrKZ7AomWvA</string>
