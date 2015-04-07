@@ -1,0 +1,8 @@
+<resources>
+    <declare-styleable name="GlassDialog">
+        <attr name="glassTextSize" format="dimension" />
+        <attr name="glassTextTitle" format="string" />
+        <attr name="glassTextContent" format="string" />
+        <attr name="glassDialogSize" format="dimension" />
+    </declare-styleable>
+</resources>

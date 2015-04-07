@@ -83,9 +83,14 @@ public class MainMapActivityTest extends ActivityInstrumentationTestCase2<MainMa
         for (int i =0; i < slideMenuCount; i++) {
             assertEquals("not same", menuArray[i], navigationList.getAdapter().getItem(i).toString());
         }
+
 //        assertNotNull("datePickingFragment is null", datePickingFragment);
 
-        
+        /*
+        TouchUtils.clickView(this, button);
+         */
+
+
     }
 
 }
